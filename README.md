@@ -4,7 +4,11 @@
 > reconciliation, and exception detection over multi-source identity data —
 > audit evidence as a data product.
 
-**Status:** v1.0 in progress — synthetic fixture pack + ingest → SQL control-check engine → evidence-packet CLI.
+> [!WARNING]
+> **Design-stage (v1.0 in progress).** This repository currently documents the design,
+> control mappings, and SQL check specification — the implementation (ingest, SQL check
+> engine, synthetic fixtures, CLI) is **not yet committed**. The `python -m uar_pipeline`
+> quickstart below describes the *planned* interface, not a currently runnable command.
 
 ## Why This Exists
 
@@ -50,8 +54,8 @@ python -m uar_pipeline --fixtures fixtures/ --out evidence/
 ```
 
 Python 3, standard library only (`sqlite3`, `csv`, `json`, `hashlib`,
-`argparse`) — no dependencies to install. The committed fixtures are fully
-synthetic, so the pipeline is clone-and-run.
+`argparse`) — no dependencies to install. Once implemented, the fixtures will be fully
+synthetic so the pipeline is clone-and-run.
 
 ## Sample Output
 
