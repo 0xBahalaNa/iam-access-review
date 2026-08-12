@@ -1,49 +1,49 @@
 # iam-access-review
 
 > A user access review (UAR) data pipeline: SQL-based population completeness,
-> reconciliation, and exception detection over multi-source identity data —
-> audit evidence as a data product.
+> reconciliation, and exception detection over multi-source identity data.
+> Audit evidence as a data product.
 
 > [!WARNING]
 > **Design-stage (v1.0 in progress).** This repository currently documents the design,
-> control mappings, and SQL check specification — the implementation (ingest, SQL check
+> control mappings, and SQL check specification. The implementation (ingest, SQL check
 > engine, synthetic fixtures, CLI) is **not yet committed**. The `python -m uar_pipeline`
 > quickstart below describes the *planned* interface, not a currently runnable command.
 
 ## Why This Exists
 
 IT controls depend on reliable data: complete review populations, reconciled
-sources, and repeatable evidence. This tool runs a quarterly UAR the way a
-controls data engineer would build it — staged source data, SQL validation
-checks, and an auditor-ready evidence packet with completeness attestations —
-instead of the spreadsheet-and-screenshot workflow most access reviews run on.
+sources, and repeatable evidence. I want a quarterly UAR built the way a
+controls data engineer would build it. Staged source data, SQL validation
+checks, and an auditor-ready evidence packet with completeness attestations.
+Not the spreadsheet-and-screenshot workflow most access reviews run on.
 
-The output is the artifact an auditor actually asks for: a defensible review
+The output is the artifact an auditor asks for: a defensible review
 population with documented lineage, typed exceptions, and proof the inputs
-weren't altered between extraction and review.
+were not altered between extraction and review.
 
 ## Controls Addressed
 
 | SOX ITGC | NIST 800-53 Rev 5 | SOC 2 TSC | Validation Method |
 |---|---|---|---|
-| Access to Programs and Data — UAR | AC-2, AC-2(3) | CC6.1–CC6.3 | population completeness + exception checks |
+| Access to Programs and Data (UAR) | AC-2, AC-2(3) | CC6.1–CC6.3 | population completeness + exception checks |
 | Terminated-user removal | AC-2(3) | CC6.2 | HR join: terminated-but-active detection |
 | Privileged access restriction | AC-6(7) | CC6.1 | recursive group flattening → effective privileged reach |
 
 ## What It Checks
 
-The control logic is SQL-first — Python only stages the data and orchestrates.
+The control logic is SQL-first. Python only stages the data and orchestrates.
 Eight checks over the staged sources:
 
-1. **Source-to-staging row-count reconciliation** — every extracted row landed
-2. **Population completeness** — every enabled account ties to an identity
-3. **Terminated-but-active** — HR-terminated identities still holding enabled accounts
-4. **Orphaned accounts** — accounts with no matching identity in any source
-5. **Dormant access** — enabled accounts with no recent activity
-6. **Ownerless groups** — groups with no accountable owner of record
-7. **Direct assignments** — entitlements granted outside group membership
-8. **Effective privileged reach** — recursive-CTE nested-group flattening to
-   compute who *actually* holds privileged access, not just direct members
+1. **Source-to-staging row-count reconciliation.** Every extracted row landed.
+2. **Population completeness.** Every enabled account ties to an identity.
+3. **Terminated-but-active.** HR-terminated identities still holding enabled accounts.
+4. **Orphaned accounts.** Accounts with no matching identity in any source.
+5. **Dormant access.** Enabled accounts with no recent activity.
+6. **Ownerless groups.** Groups with no accountable owner of record.
+7. **Direct assignments.** Entitlements granted outside group membership.
+8. **Effective privileged reach.** Recursive-CTE nested-group flattening to
+   compute who holds privileged access through nesting, not only direct members.
 
 ## Quickstart
 
@@ -54,20 +54,20 @@ python -m uar_pipeline --fixtures fixtures/ --out evidence/
 ```
 
 Python 3, standard library only (`sqlite3`, `csv`, `json`, `hashlib`,
-`argparse`) — no dependencies to install. Once implemented, the fixtures will be fully
+`argparse`). No dependencies to install. Once implemented, the fixtures will be fully
 synthetic so the pipeline is clone-and-run.
 
 ## Sample Output
 
 The evidence packet (`evidence/`) contains three artifacts:
 
-- **`population.csv`** — the identity-resolved review population: every
-  account, its source system, its matched identity, and its review status
-- **`exceptions.csv`** — typed exceptions (one row per finding, tagged by
-  check), ready for reviewer disposition
-- **`summary.json`** — run attestations: per-source row counts
+- **`population.csv`.** The identity-resolved review population: every
+  account, its source system, its matched identity, and its review status.
+- **`exceptions.csv`.** Typed exceptions (one row per finding, tagged by
+  check), ready for reviewer disposition.
+- **`summary.json`.** Run attestations: per-source row counts
   (extracted vs. staged), completeness results, and SHA-256 hashes of every
-  input file, so the run is provably complete, accurate, and repeatable
+  input file, so the run is provably complete, accurate, and repeatable.
 
 ```json
 {
@@ -81,7 +81,7 @@ The evidence packet (`evidence/`) contains three artifacts:
 }
 ```
 
-*(Illustrative — the final schema ships with v1.0.)*
+*(Illustrative. The final schema ships with v1.0.)*
 
 ## Data Lineage
 
@@ -97,19 +97,19 @@ flowchart LR
 
 Every hop is validated: sources reconcile into staging by row count, the
 population is checked for completeness against all sources, and the final
-packet attests to both — the lineage an auditor can follow without trusting
-the tool.
+packet attests to both. That is the lineage an auditor can follow without
+trusting the tool.
 
 ## Design Decisions
 
 - **SQL as the control engine.** Checks are SQL views over staged tables, not
-  Python conditionals — the control logic is readable, testable, and portable
+  Python conditionals. The control logic is readable, testable, and portable
   to a real warehouse.
 - **Standard library only.** `sqlite3` ships with Python; a reviewer can clone
   and run the pipeline in 30 seconds with zero setup.
 - **Synthetic fixtures with seeded failure modes.** Nested groups, stale
   records, missing owners, direct assignments, and inconsistent identifiers
-  are deliberately planted — the messy-identity-data problems a real UAR hits,
+  are deliberately planted. The messy-identity-data problems a real UAR hits,
   with zero data-sensitivity questions.
 - **Evidence repeatability.** Row-count attestations plus SHA-256 input hashes
   make the packet reproducible: same inputs, same evidence, provably.
