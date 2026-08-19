@@ -1,6 +1,6 @@
-# iam-access-review
+# IAM Access Review
 
-> A user access review (UAR) data pipeline: SQL-based population completeness,
+> A user access review (UAR) data pipeline I'm building: SQL-based population completeness,
 > reconciliation, and exception detection over multi-source identity data.
 > Audit evidence as a data product.
 
