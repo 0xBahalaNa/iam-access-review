@@ -5,10 +5,12 @@
 > Audit evidence as a data product.
 
 > [!WARNING]
-> **Design-stage (v1.0 in progress).** This repository currently documents the design,
-> control mappings, and SQL check specification. The implementation (ingest, SQL check
-> engine, synthetic fixtures, CLI) is **not yet committed**. The `python -m uar_pipeline`
-> quickstart below describes the *planned* interface, not a currently runnable command.
+> **Design-stage (v1.0 in progress).** Synthetic fixtures and SQLite ingest are
+> committed. The SQL check engine and evidence-packet CLI are not. The
+> `python -m uar_pipeline` quickstart below is still the *planned* interface.
+> To stage the fixtures today:
+>
+> `python -m uar_pipeline.ingest --fixtures fixtures/ --db build/uar.db`
 
 ## Why This Exists
 
