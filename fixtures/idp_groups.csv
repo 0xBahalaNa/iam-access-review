@@ -1,0 +1,9 @@
+group_id,group_name,owner_employee_id,privileged
+grp-app-admins,App Admins,E003,1
+grp-finance-analysts,Finance Analysts,E004,0
+grp-finance-all,Finance All,E004,0
+grp-engineering,Engineering,E005,0
+grp-sales,Sales,E006,0
+grp-it-ops,IT Ops,E003,0
+grp-shadow-it,Shadow IT,,0
+grp-everyone,Everyone,E002,0

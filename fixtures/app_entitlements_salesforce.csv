@@ -1,0 +1,17 @@
+app_name,app_account_id,entitlement_name,account_enabled,last_activity_date,identifier_kind,identifier_value
+Salesforce,sf-001,Salesforce User,1,2026-06-28,email,dana.okonkwo@example.com
+Salesforce,sf-002,Salesforce User,1,2026-06-27,email,priya.nair@example.com
+Salesforce,sf-003,Salesforce User,1,2026-06-26,email,mei.tanaka@example.com
+Salesforce,sf-004,Salesforce User,1,2026-06-25,email,nora.elsayed@example.com
+Salesforce,sf-005,Salesforce User,1,2026-06-24,email,jordan.hale@example.com
+Salesforce,sf-006,Salesforce User,1,2026-06-20,email,morgan.voss@example.com
+Salesforce,sf-007,Salesforce User,1,2026-06-21,email,devon.blake@example.com
+Salesforce,sf-008,Salesforce User,1,2025-05-18,email,riley.chen@example.com
+Salesforce,sf-009,Salesforce User,1,2026-06-19,email,harper.singh@example.com
+Salesforce,sf-010,Salesforce User,1,2026-06-17,email,taylor.brooks@example.com
+Salesforce,sf-011,Salesforce User,1,2026-06-16,email,jamie.okada@example.com
+Salesforce,sf-012,Salesforce System Administrator,1,2026-06-29,email,avery.kim@example.com
+Salesforce,sf-013,Salesforce User,1,2026-06-13,email,lee.santos@example.com
+Salesforce,sf-014,Salesforce User,1,2026-06-12,email,kai.bergman@example.com
+Salesforce,sf-015,Salesforce User,1,2026-06-08,email,robin.vass@example.com
+Salesforce,sf-016,Salesforce User,1,2026-06-01,email,sf-orphan@example.com

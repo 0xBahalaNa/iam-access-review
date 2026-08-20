@@ -1,0 +1,26 @@
+idp_user_id,upn,display_name,enabled,last_login_date,employee_id
+U001,dana.okonkwo@example.com,Dana Okonkwo,1,2026-06-28,E001
+U002,priya.nair@example.com,Priya Nair,1,2026-06-27,E002
+U003,luis.ferreira@example.com,Luis Ferreira,1,2026-06-29,E003
+U004,mei.tanaka@example.com,Mei Tanaka,1,2026-06-26,E004
+U005,chris.adeyemi@example.com,Chris Adeyemi,1,2026-06-29,E005
+U006,nora.elsayed@example.com,Nora El-Sayed,1,2026-06-25,E006
+U007,jordan.hale@example.com,Jordan Hale,1,2026-06-24,E007
+U008,morgan.voss@example.com,Morgan Voss,1,2026-06-20,E008
+U009,alex.petrov@example.com,Alex Petrov,1,2026-06-28,E009
+U010,samira.haddad@example.com,Samira Haddad,1,2026-06-22,E010
+U011,devon.blake@example.com,Devon Blake,1,2026-06-21,E011
+U012,riley.chen@example.com,Riley Chen,1,2025-05-20,E012
+U013,quinn.murphy@example.com,Quinn Murphy,1,2026-06-23,E013
+U014,harper.singh@example.com,Harper Singh,1,2026-06-19,E014
+U015,casey.nwosu@example.com,Casey Nwosu,1,2026-06-18,E015
+U016,taylor.brooks@example.com,Taylor Brooks,1,2026-06-17,E016
+U017,jamie.okada@example.com,Jamie Okada,1,2026-06-16,E017
+U018,avery.kim@example.com,Avery Kim,1,2026-06-29,E018
+U019,robin.vass@example.com,Robin Vass,1,2026-06-15,E019
+U020,pat.okoye@example.com,Pat Okoye,1,2026-06-14,E020
+U021,lee.santos@example.com,Lee Santos,1,2026-06-13,E021
+U022,kai.bergman@example.com,Kai Bergman,1,2026-06-12,E022
+U023,elena.rossi@example.com,Elena Rossi,1,2026-06-11,E023
+U024,jules.moreau@example.com,Jules Moreau,1,2026-06-10,E024
+U025,sam.ortega@example.com,Sam Ortega,1,2026-06-09,
