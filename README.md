@@ -5,12 +5,17 @@
 > Audit evidence as a data product.
 
 > [!WARNING]
-> **Design-stage (v1.0 in progress).** Synthetic fixtures and SQLite ingest are
-> committed. The SQL check engine and evidence-packet CLI are not. The
-> `python -m uar_pipeline` quickstart below is still the *planned* interface.
+> **Design-stage (v1.0 in progress).** Fixtures, ingest, and SQL checks 1–2
+> (reconciliation + completeness) are committed. Checks 3–8 and the
+> evidence-packet CLI are not. The `python -m uar_pipeline` quickstart below
+> is still the *planned* packet interface.
 > To stage the fixtures today:
 >
 > `python -m uar_pipeline.ingest --fixtures fixtures/ --db build/uar.db`
+>
+> Then, checks 1–2 (population completeness):
+>
+> `python -m uar_pipeline.checks --db build/uar.db`
 
 ## Why This Exists
 
@@ -35,7 +40,7 @@ were not altered between extraction and review.
 ## What It Checks
 
 The control logic is SQL-first. Python only stages the data and orchestrates.
-Eight checks over the staged sources:
+Eight checks over the staged sources (1–2 shipped; 3–8 next):
 
 1. **Source-to-staging row-count reconciliation.** Every extracted row landed.
 2. **Population completeness.** Every enabled account ties to an identity.
