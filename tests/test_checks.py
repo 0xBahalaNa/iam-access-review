@@ -14,7 +14,9 @@ FX = Path(__file__).resolve().parents[1] / "fixtures"
 VIEWS = (
     "resolved_accounts", "check_reconciliation", "check_completeness",
     "check_terminated_active", "check_orphaned_accounts", "check_dormant",
-    "check_ownerless_groups", "exceptions", "check_summary",
+    "check_ownerless_groups", "effective_group_members",
+    "check_direct_assignment", "check_nested_privileged_reach",
+    "exceptions", "check_summary",
 )
 
 
@@ -87,6 +89,57 @@ class CheckTests(unittest.TestCase):
         )]
         self.assertEqual(ids, ["grp-shadow-it"])
 
+    def test_direct_assignment_flags_exact_ids(self):
+        ids = [r[0] for r in self.conn.execute(
+            "SELECT record_id FROM check_direct_assignment"
+        )]
+        self.assertEqual(ids, ["sf-012"])
+
+    def test_nested_privileged_reach_flags_exact_ids(self):
+        ids = [r[0] for r in self.conn.execute(
+            "SELECT record_id FROM check_nested_privileged_reach"
+        )]
+        self.assertCountEqual(
+            ids, ["U004", "U007", "U008", "U014", "U017", "U022"]
+        )
+
+    def test_effective_u007_reaches_app_admins_indirect(self):
+        rows = self.conn.execute(
+            "SELECT direct FROM effective_group_members "
+            "WHERE group_id = 'grp-app-admins' AND idp_user_id = 'U007'"
+        ).fetchall()
+        self.assertEqual(rows, [(0,)])
+
+    def test_recursive_cte_terminates_on_cycle(self):
+        # Fresh connection: synthetic A<->B cycle must not touch the
+        # shared class-level database. UNION (not UNION ALL) is what
+        # makes this query return instead of recursing forever.
+        conn = sqlite3.connect(":memory:")
+        try:
+            load_schema(conn)
+            conn.executemany(
+                "INSERT INTO idp_group_members "
+                "(group_id, member_type, member_id) VALUES (?, ?, ?)",
+                [
+                    ("g-a", "group", "g-b"),
+                    ("g-b", "group", "g-a"),
+                    ("g-a", "user", "U999"),
+                ],
+            )
+            apply_checks(conn)
+            rows = conn.execute(
+                "SELECT group_id, idp_user_id, direct "
+                "FROM effective_group_members "
+                "ORDER BY group_id, direct"
+            ).fetchall()
+            self.assertEqual(rows, [
+                ("g-a", "U999", 0),
+                ("g-a", "U999", 1),
+                ("g-b", "U999", 0),
+            ])
+        finally:
+            conn.close()
+
     def test_reconciliation_fires_on_row_count_mismatch(self):
         # Fresh connection: this test corrupts the bookkeeping on purpose,
         # so it must not touch the shared class-level database.
@@ -133,11 +186,14 @@ class CheckTests(unittest.TestCase):
             self.assertEqual(counts["check_orphaned_accounts"], 2)
             self.assertEqual(counts["check_dormant"], 2)
             self.assertEqual(counts["check_ownerless_groups"], 1)
-            self.assertEqual(total, 8)
+            self.assertEqual(counts["check_direct_assignment"], 1)
+            self.assertEqual(counts["check_nested_privileged_reach"], 6)
+            self.assertEqual(total, 15)
             self.assertEqual(set(counts), {
                 "check_reconciliation", "check_completeness",
                 "check_terminated_active", "check_orphaned_accounts",
                 "check_dormant", "check_ownerless_groups",
+                "check_direct_assignment", "check_nested_privileged_reach",
             })
             # Re-running against the same db must work (views are dropped
             # and recreated, not created blind).

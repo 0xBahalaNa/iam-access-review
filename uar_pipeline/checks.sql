@@ -153,6 +153,81 @@ WHERE trim(coalesce(g.owner_employee_id, '')) = ''
    OR h.employee_id IS NULL
    OR h.status != 'active';
 
+-- Flattened group membership. The edge table stores one hop; this view
+-- walks nested groups until no new (group, user) pair appears. UNION
+-- (not UNION ALL) discards already-seen rows, so a cyclic membership
+-- graph terminates. direct=1 is a listed user edge; direct=0 arrived
+-- through a nested group. Not a control — checks 7 and 8 read it.
+DROP VIEW IF EXISTS effective_group_members;
+CREATE VIEW effective_group_members AS
+WITH RECURSIVE walk(group_id, idp_user_id, direct) AS (
+    SELECT group_id, member_id, 1
+    FROM idp_group_members
+    WHERE member_type = 'user'
+    UNION
+    SELECT parent.group_id, walk.idp_user_id, 0
+    FROM idp_group_members AS parent
+    JOIN walk ON walk.group_id = parent.member_id
+    WHERE parent.member_type = 'group'
+)
+SELECT group_id, idp_user_id, direct FROM walk;
+
+-- Direct-assigned privileged entitlements. An admin-named app role
+-- whose holder is not an effective member of any privileged IdP group
+-- is access that skipped the group-governed path. Privileged groups
+-- are the privileged column (data), not a name pattern; entitlements
+-- match '%admin%' case-insensitive. This pack plants sf-012
+-- (Salesforce System Administrator on Avery Kim / U018).
+DROP VIEW IF EXISTS check_direct_assignment;
+CREATE VIEW check_direct_assignment AS
+SELECT
+    'check_direct_assignment' AS check_name,
+    'direct_admin_assignment' AS exception_type,
+    a.app_name AS source_system,
+    a.app_account_id AS record_id,
+    'enabled ' || a.app_name || ' entitlement=' || a.entitlement_name
+        || ' idp_user_id=' || a.idp_user_id
+        || ' has no privileged group membership' AS detail
+FROM resolved_accounts AS a
+WHERE a.account_enabled = '1'
+  AND lower(a.entitlement_name) LIKE '%admin%'
+  AND a.idp_user_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM effective_group_members AS e
+      JOIN idp_groups AS g ON g.group_id = e.group_id
+      WHERE e.idp_user_id = a.idp_user_id
+        AND g.privileged = '1'
+  );
+
+-- Nested privileged reach. A user who is not a listed member of a
+-- privileged group but who reaches it through nested groups holds
+-- that privilege without appearing on the group's roster. This pack
+-- plants a three-hop chain: grp-app-admins (privileged) contains
+-- grp-finance-analysts contains grp-finance-all contains U007.
+-- Two-hop members U014/U017 and three-hop members U004/U007/U008/U022
+-- all reach grp-app-admins without a direct edge.
+DROP VIEW IF EXISTS check_nested_privileged_reach;
+CREATE VIEW check_nested_privileged_reach AS
+SELECT
+    'check_nested_privileged_reach' AS check_name,
+    'nested_privileged_reach' AS exception_type,
+    'idp_users' AS source_system,
+    e.idp_user_id AS record_id,
+    'effective member of privileged group ' || e.group_id
+        || ' via nested group, not a direct member' AS detail
+FROM effective_group_members AS e
+JOIN idp_groups AS g ON g.group_id = e.group_id
+WHERE g.privileged = '1'
+  AND e.direct = 0
+  AND NOT EXISTS (
+      SELECT 1
+      FROM idp_group_members AS m
+      WHERE m.group_id = e.group_id
+        AND m.member_type = 'user'
+        AND m.member_id = e.idp_user_id
+  );
+
 DROP VIEW IF EXISTS exceptions;
 CREATE VIEW exceptions AS
 SELECT * FROM check_reconciliation
@@ -165,7 +240,11 @@ SELECT * FROM check_orphaned_accounts
 UNION ALL
 SELECT * FROM check_dormant
 UNION ALL
-SELECT * FROM check_ownerless_groups;
+SELECT * FROM check_ownerless_groups
+UNION ALL
+SELECT * FROM check_direct_assignment
+UNION ALL
+SELECT * FROM check_nested_privileged_reach;
 
 -- Not a control. Catalog LEFT JOIN so a quiet check still counts as 0.
 DROP VIEW IF EXISTS check_summary;
@@ -183,6 +262,10 @@ FROM (
     SELECT 'check_dormant'
     UNION ALL
     SELECT 'check_ownerless_groups'
+    UNION ALL
+    SELECT 'check_direct_assignment'
+    UNION ALL
+    SELECT 'check_nested_privileged_reach'
 ) AS catalog
 LEFT JOIN exceptions ON exceptions.check_name = catalog.check_name
 GROUP BY catalog.check_name
