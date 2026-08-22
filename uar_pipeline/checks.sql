@@ -55,11 +55,117 @@ LEFT JOIN hr_roster AS h ON h.employee_id = u.employee_id
 WHERE u.enabled = '1'
   AND (trim(coalesce(u.employee_id, '')) = '' OR h.employee_id IS NULL);
 
+-- Terminated-but-active. HR says the person left; the IdP or an app still
+-- has them enabled. The review must surface that, or disable-on-termination
+-- is untested. This pack plants U008 (Morgan Voss / E008, terminated
+-- 2026-02-28) and Salesforce sf-006, which resolves to the same employee.
+-- E025 never stages, so it cannot appear here.
+DROP VIEW IF EXISTS check_terminated_active;
+CREATE VIEW check_terminated_active AS
+SELECT
+    'check_terminated_active' AS check_name,
+    'terminated_still_enabled' AS exception_type,
+    'idp_users' AS source_system,
+    u.idp_user_id AS record_id,
+    'enabled IdP user employee_id=' || u.employee_id
+        || ' status=terminated' AS detail
+FROM idp_users AS u
+JOIN hr_roster AS h ON h.employee_id = u.employee_id
+WHERE u.enabled = '1'
+  AND h.status = 'terminated'
+UNION ALL
+SELECT
+    'check_terminated_active',
+    'terminated_still_enabled',
+    a.app_name,
+    a.app_account_id,
+    'enabled ' || a.app_name || ' account employee_id=' || a.employee_id
+        || ' status=terminated'
+FROM resolved_accounts AS a
+JOIN hr_roster AS h ON h.employee_id = a.employee_id
+WHERE a.account_enabled = '1'
+  AND h.status = 'terminated';
+
+-- Orphaned app accounts. An enabled account whose identifier matches no
+-- IdP user is access with no identity in the review population. Salesforce
+-- joins on UPN; GitHub joins on a derived username. This pack plants
+-- sf-016 (sf-orphan@example.com) and gh-011 (sortega, not sam-ortega).
+DROP VIEW IF EXISTS check_orphaned_accounts;
+CREATE VIEW check_orphaned_accounts AS
+SELECT
+    'check_orphaned_accounts' AS check_name,
+    'unresolved_identity' AS exception_type,
+    a.app_name AS source_system,
+    a.app_account_id AS record_id,
+    'enabled account identifier=' || a.identifier_value
+        || ' resolved to no IdP user' AS detail
+FROM resolved_accounts AS a
+WHERE a.account_enabled = '1'
+  AND a.idp_user_id IS NULL;
+
+-- Dormant access. Enabled IdP users or app accounts with no activity on
+-- or after 2026-04-01, or a blank activity date. The cutoff is a fixture
+-- literal, not a rolling window, so the packet does not depend on when
+-- the check runs. This pack plants U012 (last login 2025-05-20) and
+-- sf-008 (last activity 2025-05-18).
+DROP VIEW IF EXISTS check_dormant;
+CREATE VIEW check_dormant AS
+SELECT
+    'check_dormant' AS check_name,
+    'dormant_access' AS exception_type,
+    'idp_users' AS source_system,
+    u.idp_user_id AS record_id,
+    'enabled IdP user last_login_date=' || coalesce(u.last_login_date, '')
+        || ' cutoff=2026-04-01' AS detail
+FROM idp_users AS u
+WHERE u.enabled = '1'
+  AND (trim(coalesce(u.last_login_date, '')) = ''
+       OR u.last_login_date < '2026-04-01')
+UNION ALL
+SELECT
+    'check_dormant',
+    'dormant_access',
+    a.app_name,
+    a.app_account_id,
+    'enabled account last_activity_date='
+        || coalesce(a.last_activity_date, '')
+        || ' cutoff=2026-04-01'
+FROM resolved_accounts AS a
+WHERE a.account_enabled = '1'
+  AND (trim(coalesce(a.last_activity_date, '')) = ''
+       OR a.last_activity_date < '2026-04-01');
+
+-- Ownerless groups. A group with a blank owner, an owner missing from
+-- staged HR, or an owner who is not active has no accountable reviewer.
+-- This pack plants grp-shadow-it (blank owner_employee_id).
+DROP VIEW IF EXISTS check_ownerless_groups;
+CREATE VIEW check_ownerless_groups AS
+SELECT
+    'check_ownerless_groups' AS check_name,
+    'ownerless_group' AS exception_type,
+    'idp_groups' AS source_system,
+    g.group_id AS record_id,
+    'owner_employee_id=' || coalesce(g.owner_employee_id, '')
+        || ' not an active staged HR employee' AS detail
+FROM idp_groups AS g
+LEFT JOIN hr_roster AS h ON h.employee_id = g.owner_employee_id
+WHERE trim(coalesce(g.owner_employee_id, '')) = ''
+   OR h.employee_id IS NULL
+   OR h.status != 'active';
+
 DROP VIEW IF EXISTS exceptions;
 CREATE VIEW exceptions AS
 SELECT * FROM check_reconciliation
 UNION ALL
-SELECT * FROM check_completeness;
+SELECT * FROM check_completeness
+UNION ALL
+SELECT * FROM check_terminated_active
+UNION ALL
+SELECT * FROM check_orphaned_accounts
+UNION ALL
+SELECT * FROM check_dormant
+UNION ALL
+SELECT * FROM check_ownerless_groups;
 
 -- Not a control. Catalog LEFT JOIN so a quiet check still counts as 0.
 DROP VIEW IF EXISTS check_summary;
@@ -69,6 +175,14 @@ FROM (
     SELECT 'check_reconciliation' AS check_name
     UNION ALL
     SELECT 'check_completeness'
+    UNION ALL
+    SELECT 'check_terminated_active'
+    UNION ALL
+    SELECT 'check_orphaned_accounts'
+    UNION ALL
+    SELECT 'check_dormant'
+    UNION ALL
+    SELECT 'check_ownerless_groups'
 ) AS catalog
 LEFT JOIN exceptions ON exceptions.check_name = catalog.check_name
 GROUP BY catalog.check_name
