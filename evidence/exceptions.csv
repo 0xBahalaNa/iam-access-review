@@ -1,0 +1,16 @@
+check_name,exception_type,source_system,record_id,detail
+check_completeness,missing_hr_identity,idp_users,U025,enabled IdP user employee_id=
+check_direct_assignment,direct_admin_assignment,Salesforce,sf-012,enabled Salesforce entitlement=Salesforce System Administrator idp_user_id=U018 has no privileged group membership
+check_dormant,dormant_access,Salesforce,sf-008,enabled account last_activity_date=2025-05-18 cutoff=2026-04-01
+check_dormant,dormant_access,idp_users,U012,enabled IdP user last_login_date=2025-05-20 cutoff=2026-04-01
+check_nested_privileged_reach,nested_privileged_reach,idp_users,U004,"effective member of privileged group grp-app-admins via nested group, not a direct member"
+check_nested_privileged_reach,nested_privileged_reach,idp_users,U007,"effective member of privileged group grp-app-admins via nested group, not a direct member"
+check_nested_privileged_reach,nested_privileged_reach,idp_users,U008,"effective member of privileged group grp-app-admins via nested group, not a direct member"
+check_nested_privileged_reach,nested_privileged_reach,idp_users,U014,"effective member of privileged group grp-app-admins via nested group, not a direct member"
+check_nested_privileged_reach,nested_privileged_reach,idp_users,U017,"effective member of privileged group grp-app-admins via nested group, not a direct member"
+check_nested_privileged_reach,nested_privileged_reach,idp_users,U022,"effective member of privileged group grp-app-admins via nested group, not a direct member"
+check_orphaned_accounts,unresolved_identity,GitHub,gh-011,enabled account identifier=sortega resolved to no IdP user
+check_orphaned_accounts,unresolved_identity,Salesforce,sf-016,enabled account identifier=sf-orphan@example.com resolved to no IdP user
+check_ownerless_groups,ownerless_group,idp_groups,grp-shadow-it,owner_employee_id= not an active staged HR employee
+check_terminated_active,terminated_still_enabled,Salesforce,sf-006,enabled Salesforce account employee_id=E008 status=terminated
+check_terminated_active,terminated_still_enabled,idp_users,U008,enabled IdP user employee_id=E008 status=terminated
