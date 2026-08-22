@@ -1,4 +1,4 @@
-"""Stdlib tests for M1 SQL control checks. No third-party imports."""
+"""Stdlib tests for SQL control checks. No third-party imports."""
 
 import io
 import sqlite3
@@ -13,7 +13,8 @@ from uar_pipeline.ingest import ingest_all, load_schema, main as ingest_main
 FX = Path(__file__).resolve().parents[1] / "fixtures"
 VIEWS = (
     "resolved_accounts", "check_reconciliation", "check_completeness",
-    "exceptions", "check_summary",
+    "check_terminated_active", "check_orphaned_accounts", "check_dormant",
+    "check_ownerless_groups", "exceptions", "check_summary",
 )
 
 
@@ -62,6 +63,30 @@ class CheckTests(unittest.TestCase):
         )]
         self.assertEqual(ids, ["U025"])
 
+    def test_terminated_active_flags_exact_ids(self):
+        ids = [r[0] for r in self.conn.execute(
+            "SELECT record_id FROM check_terminated_active"
+        )]
+        self.assertCountEqual(ids, ["U008", "sf-006"])
+
+    def test_orphaned_accounts_flags_exact_ids(self):
+        ids = [r[0] for r in self.conn.execute(
+            "SELECT record_id FROM check_orphaned_accounts"
+        )]
+        self.assertCountEqual(ids, ["sf-016", "gh-011"])
+
+    def test_dormant_flags_exact_ids(self):
+        ids = [r[0] for r in self.conn.execute(
+            "SELECT record_id FROM check_dormant"
+        )]
+        self.assertCountEqual(ids, ["U012", "sf-008"])
+
+    def test_ownerless_groups_flags_exact_ids(self):
+        ids = [r[0] for r in self.conn.execute(
+            "SELECT record_id FROM check_ownerless_groups"
+        )]
+        self.assertEqual(ids, ["grp-shadow-it"])
+
     def test_reconciliation_fires_on_row_count_mismatch(self):
         # Fresh connection: this test corrupts the bookkeeping on purpose,
         # so it must not touch the shared class-level database.
@@ -104,8 +129,16 @@ class CheckTests(unittest.TestCase):
                     counts[name] = n
             self.assertEqual(counts["check_reconciliation"], 0)
             self.assertEqual(counts["check_completeness"], 1)
-            self.assertEqual(total, 1)
-            self.assertEqual(set(counts), {"check_reconciliation", "check_completeness"})
+            self.assertEqual(counts["check_terminated_active"], 2)
+            self.assertEqual(counts["check_orphaned_accounts"], 2)
+            self.assertEqual(counts["check_dormant"], 2)
+            self.assertEqual(counts["check_ownerless_groups"], 1)
+            self.assertEqual(total, 8)
+            self.assertEqual(set(counts), {
+                "check_reconciliation", "check_completeness",
+                "check_terminated_active", "check_orphaned_accounts",
+                "check_dormant", "check_ownerless_groups",
+            })
             # Re-running against the same db must work (views are dropped
             # and recreated, not created blind).
             code2, _stdout2, err2 = _run_checks(db_path)
