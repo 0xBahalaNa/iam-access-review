@@ -16,7 +16,7 @@ VIEWS = (
     "check_terminated_active", "check_orphaned_accounts", "check_dormant",
     "check_ownerless_groups", "effective_group_members",
     "check_direct_assignment", "check_nested_privileged_reach",
-    "exceptions", "check_summary",
+    "exceptions", "check_summary", "population",
 )
 
 
@@ -127,11 +127,16 @@ class CheckTests(unittest.TestCase):
                 ],
             )
             apply_checks(conn)
-            rows = conn.execute(
+            # LIMIT with no ORDER BY streams rows straight off the CTE
+            # queue, so a UNION ALL regression returns 8 rows and fails
+            # the exact-row assert instead of hanging the suite. An SQL
+            # ORDER BY would materialize the infinite walk before LIMIT
+            # could apply; sorting happens in Python instead.
+            rows = sorted(conn.execute(
                 "SELECT group_id, idp_user_id, direct "
                 "FROM effective_group_members "
-                "ORDER BY group_id, direct"
-            ).fetchall()
+                "LIMIT 8"
+            ).fetchall())
             self.assertEqual(rows, [
                 ("g-a", "U999", 0),
                 ("g-a", "U999", 1),
