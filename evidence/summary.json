@@ -1,0 +1,54 @@
+{
+  "as_of_date": "2026-06-30",
+  "sources": {
+    "hr_roster.csv": {
+      "extracted": 25,
+      "staged": 24,
+      "rejected": 1,
+      "sha256": "3c983c2130c891dd0c4f5e16197d4ddd79e188d293b91921f9ff59f4a49b45b3"
+    },
+    "idp_users.csv": {
+      "extracted": 25,
+      "staged": 25,
+      "rejected": 0,
+      "sha256": "b6ebc5867399fad623dfbcecca5407c4df51c511e1d7d3791c0bff4062072058"
+    },
+    "idp_groups.csv": {
+      "extracted": 8,
+      "staged": 8,
+      "rejected": 0,
+      "sha256": "c20f0440b731da746f07d4fa004fc7f6468bc31bbfcf12064f2a439f9541f002"
+    },
+    "idp_group_members.csv": {
+      "extracted": 40,
+      "staged": 40,
+      "rejected": 0,
+      "sha256": "6380eae7bfc55a05dba063d09025df133d2ee30fe54e6d4b00511fc58839258e"
+    },
+    "app_entitlements_salesforce.csv": {
+      "extracted": 16,
+      "staged": 16,
+      "rejected": 0,
+      "sha256": "2efb5d56c528d967a35dc4ec91f0a57824399bb93f2fb1ee793ac7d1a48caf42"
+    },
+    "app_entitlements_github.csv": {
+      "extracted": 12,
+      "staged": 12,
+      "rejected": 0,
+      "sha256": "26704ba232e150fa960bad183fc7a7d9fca099a9127e8e7bf21252fb2c83059d"
+    }
+  },
+  "reconciliation": "PASS",
+  "population_rows": 53,
+  "exceptions_by_check": {
+    "check_completeness": 1,
+    "check_direct_assignment": 1,
+    "check_dormant": 2,
+    "check_nested_privileged_reach": 6,
+    "check_orphaned_accounts": 2,
+    "check_ownerless_groups": 1,
+    "check_reconciliation": 0,
+    "check_terminated_active": 2
+  },
+  "total_exceptions": 15
+}

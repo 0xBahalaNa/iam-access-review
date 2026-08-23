@@ -270,3 +270,50 @@ FROM (
 LEFT JOIN exceptions ON exceptions.check_name = catalog.check_name
 GROUP BY catalog.check_name
 ORDER BY catalog.check_name;
+
+-- Review population. Every enabled IdP user and every enabled app
+-- account; disabled accounts hold no access, so they are out of
+-- scope. review_status is the sorted list of account-level checks
+-- that flagged the row, or 'clear'. Built as group_concat over an
+-- ordered subquery (not aggregate ORDER BY) so CREATE VIEW works
+-- on SQLite before 3.44. DISTINCT so a check that emits two rows
+-- for one account still appears once. Reconciliation and ownerless
+-- exceptions key on files and groups, so they never join — they
+-- are not account-level findings.
+DROP VIEW IF EXISTS population;
+CREATE VIEW population AS
+WITH flagged AS (
+    SELECT
+        record_id,
+        source_system,
+        group_concat(check_name) AS review_status
+    FROM (
+        SELECT DISTINCT record_id, source_system, check_name
+        FROM exceptions
+        ORDER BY record_id, source_system, check_name
+    ) AS ordered
+    GROUP BY record_id, source_system
+)
+SELECT
+    'idp_users' AS source_system,
+    u.idp_user_id AS account_id,
+    u.idp_user_id AS idp_user_id,
+    u.employee_id AS employee_id,
+    coalesce(f.review_status, 'clear') AS review_status
+FROM idp_users AS u
+LEFT JOIN flagged AS f
+    ON f.record_id = u.idp_user_id
+   AND f.source_system = 'idp_users'
+WHERE u.enabled = '1'
+UNION ALL
+SELECT
+    a.app_name,
+    a.app_account_id,
+    coalesce(a.idp_user_id, ''),
+    coalesce(a.employee_id, ''),
+    coalesce(f.review_status, 'clear')
+FROM resolved_accounts AS a
+LEFT JOIN flagged AS f
+    ON f.record_id = a.app_account_id
+   AND f.source_system = a.app_name
+WHERE a.account_enabled = '1';
