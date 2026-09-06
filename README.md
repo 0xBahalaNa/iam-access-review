@@ -1,8 +1,11 @@
 # IAM Access Review
 
-> A user access review (UAR) data pipeline I built: SQL-based population completeness,
-> reconciliation, and exception detection over multi-source identity data.
-> Audit evidence as a data product.
+**Access reviews are where SOX ITGC audits fail, and the failure is almost never "the wrong person had access." It is that you can't prove the population was complete. That is a deficiency, and deficiencies cost remediation cycles and audit hours. This pipeline makes the population provable.**
+
+- Multi-source identity extracts reconciled against HR as the population of record, then eight SQL control checks: terminated-but-active, orphaned access, dormant access, ownerless groups, direct assignments, nested-group flattening
+- Attested evidence packet with SHA-256 input hashes that regenerates byte-identical
+- SOX ITGC; NIST AC-2 / AC-6(7) / AU-6; SOC 2 CC6.1–CC6.3
+- Python + SQL (SQLite), stdlib only
 
 ## Why This Exists
 
