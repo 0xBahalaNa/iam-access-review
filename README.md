@@ -1,23 +1,24 @@
 # IAM Access Review
 
-**Access reviews are where SOX ITGC audits fail, and the failure is almost never "the wrong person had access." It is that you can't prove the population was complete. That is a deficiency, and deficiencies cost remediation cycles and audit hours. This pipeline makes the population provable.**
+**Access reviews are where SOX ITGC audits fail, and the failure is almost never "the wrong person had access." It is that you can't prove the list you reviewed was the list that existed. That is an audit finding, and findings cost remediation cycles and audit hours. This pipeline makes the population provable.**
 
-- Multi-source identity extracts reconciled against HR as the population of record, then eight SQL control checks: terminated-but-active, orphaned access, dormant access, ownerless groups, direct assignments, nested-group flattening
-- Attested evidence packet with SHA-256 input hashes that regenerates byte-identical
+- Multi-source identity extracts matched against HR as the population of record, then eight SQL control checks: terminated-but-active, orphaned access, dormant access, ownerless groups, direct assignments, nested-group flattening
+- Evidence packet with a SHA-256 hash of each input file. Run it twice, you get the same files.
 - SOX ITGC; NIST AC-2 / AC-6(7) / AU-6; SOC 2 CC6.1–CC6.3
-- Python + SQL (SQLite), stdlib only
+- Python + SQL (SQLite), built-in library only
 
 ## Why This Exists
 
-IT controls depend on reliable data: complete review populations, reconciled
+IT controls depend on reliable data: complete review populations, matched
 sources, and repeatable evidence. I want a quarterly UAR built the way a
 controls data engineer would build it. Staged source data, SQL validation
-checks, and an auditor-ready evidence packet with completeness attestations.
-Not the spreadsheet-and-screenshot workflow most access reviews run on.
+checks, and an auditor-ready evidence packet with counts that prove nothing
+dropped. Not the spreadsheet-and-screenshot workflow most access reviews
+run on.
 
 The output is the artifact an auditor asks for: a defensible review
-population with documented lineage, typed exceptions, and proof the inputs
-were not altered between extraction and review.
+population, exceptions with a reason on each row, and proof the inputs
+were not swapped between pull and review.
 
 ## Controls Addressed
 
@@ -30,8 +31,8 @@ is built to satisfy.
 | Terminated-user removal | AC-2(3), PS-4 | CC6.2 | HR join: terminated-but-active detection. The HR termination event is the PS-4 boundary; AC-2(3) is the account-disable that should follow. The check finds where that handoff failed |
 | Privileged access restriction | AC-6(7) | CC6.1 | recursive group flattening → effective privileged reach |
 
-The packet is the audit record an AU-6 review examines: attested counts,
-SHA-256 input hashes, and typed exceptions.
+The packet is the audit record an AU-6 review examines: counts, a SHA-256
+hash of each input file, and exceptions with a reason.
 
 ## What It Checks
 
@@ -46,14 +47,14 @@ is the auditor-readable rationale.
    accounts.
 4. **Orphaned accounts.** Enabled app accounts with no matching IdP identity.
 5. **Dormant access.** Enabled accounts with no activity on or after the
-   fixture cutoff `2026-04-01`.
+   test-data cutoff `2026-04-01`.
 6. **Ownerless groups.** Groups with no accountable owner of record.
-7. **Direct assignments.** Admin-named entitlements granted outside
+7. **Direct assignments.** Admin-named access granted outside
    privileged-group membership.
 8. **Effective privileged reach.** Recursive-CTE nested-group flattening:
    who holds privileged access through nesting, not only as a listed member.
 
-Known limit: privileged *entitlements* match `entitlement_name LIKE '%admin%'`
+Known limit: privileged *access grants* match `entitlement_name LIKE '%admin%'`
 (case-insensitive). Privileged *groups* are the `privileged` column on
 `idp_groups`, not a name pattern.
 
@@ -69,7 +70,8 @@ python -m uar_pipeline --fixtures fixtures/ --out evidence/
 ```
 
 Python 3, standard library only (`sqlite3`, `csv`, `json`, `hashlib`,
-`argparse`). No dependencies to install. The fixtures are synthetic.
+`argparse`). No dependencies to install. The `fixtures/` files are synthetic
+test data.
 
 To inspect the staged database instead of writing the packet:
 
@@ -91,14 +93,14 @@ matches the code.
   (reconciliation, ownerless groups) do not appear there; they are not
   account-level. The SQL builds the string with `group_concat` over an ordered
   subquery, not `group_concat(... ORDER BY ...)`, so `CREATE VIEW` works on
-  SQLite before 3.44. A double-run produces byte-identical files.
+  SQLite before 3.44. Run it twice, you get the same files.
 - **`exceptions.csv`.** One row per finding, five columns (`check_name`,
   `exception_type`, `source_system`, `record_id`, `detail`).
 - **`summary.json`.** Per-source extracted/staged/rejected counts, SHA-256 of
   every input file, `reconciliation` derived from the check view, exception
   counts for all eight checks (zeros included), and `population_rows`.
-  There is no timestamp. Repeatability is by construction: same fixtures,
-  same packet. The only date is the fixture as-of literal `2026-06-30`.
+  There is no timestamp. Same test data in, same packet out. The only date
+  is the fixture as-of literal `2026-06-30`.
 
 On this pack: 53 population rows, 15 exceptions. `U008` is flagged by both
 `check_nested_privileged_reach` and `check_terminated_active`. `sf-016` is
@@ -165,34 +167,34 @@ orphaned (`idp_user_id` empty).
 
 ```mermaid
 flowchart LR
-    A["sources<br/>HR roster · IdP users/groups · app entitlement exports"]
-    B["staging<br/>row-count reconciliation"]
-    C["population<br/>identity resolution + completeness check"]
-    D["exception checks<br/>8 SQL checks"]
-    E["evidence packet<br/>attested: counts + SHA-256 input hashes"]
+    A["sources<br/>6 CSV files · HR · IdP · apps"]
+    B["staging<br/>row counts match the source"]
+    C["population<br/>same person across every source"]
+    D["8 SQL checks<br/>exceptions with a reason each"]
+    E["packet<br/>counts + file hashes"]
     A --> B --> C --> D --> E
 ```
 
-Every hop is validated: sources reconcile into staging by row count, the
-population is checked for completeness against all sources, and the final
-packet attests to both. That is the lineage an auditor can follow without
-trusting the tool.
+Every hop is validated: source row counts match staging, the population is
+the same person across every source with nothing dropped, and the packet
+carries counts plus a hash of each input file. That is the trail an auditor
+can follow without trusting the tool.
 
 ## Design Decisions
 
 - **SQL as the control engine.** Checks are SQL views over staged tables, not
-  Python conditionals. The control logic is readable, testable, and portable
+  if/else in Python. The control logic is readable, testable, and can move
   to a real warehouse.
 - **Standard library only.** `sqlite3` ships with Python; a reviewer can clone
   and run the pipeline in 30 seconds with zero setup.
-- **Synthetic fixtures with seeded failure modes.** Nested groups, stale
+- **Synthetic test data with planted failures.** Nested groups, stale
   records, missing owners, direct assignments, and inconsistent identifiers
   are deliberately planted. The messy-identity-data problems a real UAR hits,
   with zero data-sensitivity questions.
-- **Evidence repeatability.** No timestamp in the packet. Row-count
-  attestations plus SHA-256 input hashes make the run a pure function of the
-  fixtures. The committed `evidence/` sample is the drift alarm: regenerate
-  it and `git diff` is empty.
+- **Same files every run.** No timestamp in the packet. Counts plus a SHA-256
+  hash of each input file make the run a pure function of the test data. The
+  committed `evidence/` sample is the drift alarm: regenerate it and
+  `git diff` is empty.
 - **Deliberately out of scope:** dashboards, dbt/Airflow/Databricks, live
-  system connectors, web UI. Fixtures-only keeps the pipeline auditable
+  system connectors, web UI. Test data only keeps the pipeline auditable
   end-to-end in one sitting.
