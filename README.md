@@ -198,3 +198,5 @@ can follow without trusting the tool.
 - **Deliberately out of scope:** dashboards, dbt/Airflow/Databricks, live
   system connectors, web UI. Test data only keeps the pipeline auditable
   end-to-end in one sitting.
+
+CI runs `python3 -m uar_pipeline --fixtures fixtures/ --out evidence/` and `python3 -m unittest discover tests`.
