@@ -15,4 +15,5 @@ jobs:
         with:
           python-version: "3.10"
       - run: python3 -m uar_pipeline --fixtures fixtures/ --out evidence/
+      - run: git diff --exit-code evidence/
       - run: python3 -m unittest discover tests
