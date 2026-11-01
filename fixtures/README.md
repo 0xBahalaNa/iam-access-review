@@ -6,7 +6,7 @@ hand-written literals relative to that day. Nothing is computed from "today".
 Load with:
 
 ```bash
-python -m uar_pipeline.ingest --fixtures fixtures/ --db build/uar.db
+python3 -m uar_pipeline.ingest --fixtures fixtures/ --db build/uar.db
 ```
 
 Three source systems, six CSV files. Ingest stages rows; it does not resolve
