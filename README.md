@@ -70,7 +70,7 @@ python3 -m uar_pipeline --fixtures fixtures/ --out evidence/
 ```
 
 Use the `python3` command. Ubuntu provides `python3` and does not install a
-command named `python`. If `python3` is missing, install Python 3.
+command named `python`. If `python3` is missing, install Python 3.10 or newer.
 Do not create a virtual environment. The pipeline imports only the standard
 library (`sqlite3`, `csv`, `json`, `hashlib`, `argparse`), so there are no
 packages to install. The `fixtures/` files are synthetic test data.
