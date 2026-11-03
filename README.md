@@ -66,18 +66,20 @@ Disabled accounts hold no access, so they are out of scope.
 ```bash
 git clone https://github.com/0xBahalaNa/iam-access-review
 cd iam-access-review
-python -m uar_pipeline --fixtures fixtures/ --out evidence/
+python3 -m uar_pipeline --fixtures fixtures/ --out evidence/
 ```
 
-Python 3, standard library only (`sqlite3`, `csv`, `json`, `hashlib`,
-`argparse`). No dependencies to install. The `fixtures/` files are synthetic
-test data.
+Use the `python3` command. Ubuntu provides `python3` and does not install a
+command named `python`. If `python3` is missing, install Python 3.
+Do not create a virtual environment. The pipeline imports only the standard
+library (`sqlite3`, `csv`, `json`, `hashlib`, `argparse`), so there are no
+packages to install. The `fixtures/` files are synthetic test data.
 
 To inspect the staged database instead of writing the packet:
 
 ```bash
-python -m uar_pipeline.ingest --fixtures fixtures/ --db build/uar.db
-python -m uar_pipeline.checks --db build/uar.db
+python3 -m uar_pipeline.ingest --fixtures fixtures/ --db build/uar.db
+python3 -m uar_pipeline.checks --db build/uar.db
 ```
 
 ## Sample Output
