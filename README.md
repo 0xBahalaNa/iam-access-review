@@ -82,6 +82,18 @@ python3 -m uar_pipeline.ingest --fixtures fixtures/ --db build/uar.db
 python3 -m uar_pipeline.checks --db build/uar.db
 ```
 
+## Run the tests
+
+```bash
+python3 -m unittest discover tests
+```
+
+Run the command from the repository root. Use `python3`. Do not create a
+virtual environment. There are no packages to install. The suite is
+`tests/test_checks.py`, `tests/test_ingest.py`, and `tests/test_packet.py`.
+
+A passing run exits 0. The report on stderr ends with `OK`.
+
 ## Sample Output
 
 The committed `evidence/` packet is the drift alarm. Regenerating it with the
